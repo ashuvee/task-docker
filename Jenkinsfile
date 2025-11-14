@@ -1,5 +1,9 @@
 pipeline {
-    agent any
+    agent {
+        dockerfile {
+            dir 'jenkins'
+        }
+    }
     
     environment {
         SONARQUBE_URL          = 'http://sonarqube:9000'
@@ -72,11 +76,9 @@ pipeline {
         
         stage('Push to Docker Hub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                    sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
-                    sh "docker push ${DOCKER_IMAGE}:${VERSION}"
-                    sh "docker tag ${DOCKER_IMAGE}:${VERSION} ${DOCKER_IMAGE}:latest"
-                    sh "docker push ${DOCKER_IMAGE}:latest"
+                docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
+                    docker.image("${DOCKER_IMAGE}:${VERSION}").push()
+                    docker.image("${DOCKER_IMAGE}:${VERSION}").push('latest')
                 }
             }
         }
