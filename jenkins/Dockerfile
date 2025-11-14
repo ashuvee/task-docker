@@ -4,15 +4,9 @@ FROM jenkins/jenkins:lts
 # Switch to the root user to install software
 USER root
 
-# Install Docker CLI so Jenkins can interact with Docker
+# Install Docker CLI, Maven, and Node.js so Jenkins can build and analyze
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends docker.io && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-# Install Maven to build the Java project
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends maven && \
+    apt-get install -y --no-install-recommends docker.io maven nodejs && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -27,7 +21,8 @@ RUN jenkins-plugin-cli --plugins \
     sonar \
     nexus-artifact-uploader \
     credentials-binding \
-    config-file-provider
+    config-file-provider \
+    pipeline-utility-steps
 
 # Switch back to the standard 'jenkins' user
 USER jenkins
