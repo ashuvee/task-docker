@@ -1,0 +1,97 @@
+pipeline {
+    agent any
+    
+    environment {
+        SONARQUBE_URL          = 'http://sonarqube:9000'
+        NEXUS_URL              = 'http://nexus:8081'
+        DOCKER_IMAGE           = "ashuz/sample-webapp" // CHANGE THIS
+        VERSION                = "${env.BUILD_NUMBER}"
+    }
+    
+    tools {
+        maven 'Maven-3.8'
+        jdk 'JDK-21'
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                echo "Checking out code..."
+                checkout scm
+            }
+        }
+        
+        stage('Build & Unit Tests') {
+            steps {
+                echo "Building and running unit tests..."
+                sh 'mvn clean package'
+            }
+            post {
+                always {
+                    junit '**/target/surefire-reports/*.xml'
+                }
+            }
+        }
+        
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh "mvn sonar:sonar -Dsonar.login=${credentials('sonarqube-token')}"
+                }
+            }
+        }
+        
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+        
+        stage('Deploy to Nexus') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'nexus-credentials', passwordVariable: 'NEXUS_PASSWORD', usernameVariable: 'NEXUS_USERNAME')]) {
+                    sh """
+                        mvn deploy -DskipTests \
+                        -s settings.xml
+                    """
+                }
+            }
+        }
+        
+        stage('Build Docker Image') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'nexus-credentials', passwordVariable: 'NEXUS_PASSWORD', usernameVariable: 'NEXUS_USERNAME')]) {
+                    script {
+                        def pom = readMavenPom file: 'pom.xml'
+                        docker.build(
+                            "${DOCKER_IMAGE}:${VERSION}",
+                            "--build-arg VERSION=${pom.version} " +
+                            "--build-arg NEXUS_USERNAME=${NEXUS_USERNAME} " +
+                            "--build-arg NEXUS_PASSWORD=${NEXUS_PASSWORD} ."
+                        )
+                    }
+                }
+            }
+        }
+        
+        stage('Push to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                    sh "docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}"
+                    sh "docker push ${DOCKER_IMAGE}:${VERSION}"
+                    sh "docker tag ${DOCKER_IMAGE}:${VERSION} ${DOCKER_IMAGE}:latest"
+                    sh "docker push ${DOCKER_IMAGE}:latest"
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            echo "Cleaning up workspace..."
+            cleanWs()
+        }
+    }
+}
