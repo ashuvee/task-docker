@@ -76,9 +76,11 @@ pipeline {
         
         stage('Push to Docker Hub') {
             steps {
-                docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
-                    docker.image("${DOCKER_IMAGE}:${VERSION}").push()
-                    docker.image("${DOCKER_IMAGE}:${VERSION}").push('latest')
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
+                        docker.image("${DOCKER_IMAGE}:${VERSION}").push()
+                        docker.image("${DOCKER_IMAGE}:${VERSION}").push('latest')
+                    }
                 }
             }
         }
