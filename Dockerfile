@@ -17,13 +17,11 @@ SHELL ["/bin/bash", "-c"]
 RUN rm -rf /usr/local/tomcat/webapps/*
 
 # Install wget and download artifact from Nexus with authentication
-RUN apt-get update && apt-get install -y wget && \
-    wget --no-check-certificate \
-    --user="${NEXUS_USERNAME}" \
-    --password="${NEXUS_PASSWORD}" \
-    -O /usr/local/tomcat/webapps/ROOT.war \
-    "${NEXUS_URL}/repository/${NEXUS_REPO}/${GROUP_ID//.//}/${ARTIFACT_ID}/${VERSION}/${ARTIFACT_ID}-${VERSION}.war" && \
-    apt-get remove -y wget && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y curl && \
+    curl -u "${NEXUS_USERNAME}:${NEXUS_PASSWORD}" \
+    -L -o /usr/local/tomcat/webapps/ROOT.war \
+    "${NEXUS_URL}/service/rest/v1/search/assets/download?repository=${NEXUS_REPO}&group=${GROUP_ID}&name=${ARTIFACT_ID}&version=${VERSION}&maven.extension=war" && \
+    apt-get remove -y curl && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 
 # Expose port
 EXPOSE 8080
