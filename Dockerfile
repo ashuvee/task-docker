@@ -3,7 +3,7 @@ LABEL maintainer="admin@example.com"
 LABEL application="sample-webapp"
 
 # Build arguments for Nexus artifact retrieval
-ARG NEXUS_URL=http://nexus:8081
+ARG NEXUS_URL=http://136.112.216.68:8081
 ARG NEXUS_REPO=maven-snapshots
 ARG NEXUS_USERNAME
 ARG NEXUS_PASSWORD
