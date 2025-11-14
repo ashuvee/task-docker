@@ -66,24 +66,10 @@ pipeline {
         
         stage('Deploy to Nexus') {
             steps {
-                echo "=== Stage 7: Upload Artifact to Nexus ==="
-                script {
-                    def pom = readMavenPom file: 'pom.xml'
-                    def isSnapshot = pom.version.contains('SNAPSHOT')
-                    def repoId = isSnapshot ? 'nexus-snapshots' : 'nexus-releases'
-                    def repoUrl = isSnapshot ? 
-                        "${NEXUS_URL}/repository/maven-snapshots/" : 
-                        "${NEXUS_URL}/repository/maven-releases/"
-                    
+                withCredentials([usernamePassword(credentialsId: 'nexus-credentials', passwordVariable: 'NEXUS_PASSWORD', usernameVariable: 'NEXUS_USERNAME')]) {
                     sh """
-                        mvn deploy:deploy-file \
-                        -DgroupId=${pom.groupId} \
-                        -DartifactId=${pom.artifactId} \
-                        -Dversion=${pom.version} \
-                        -Dpackaging=war \
-                        -Dfile=target/sample-webapp.war \
-                        -DrepositoryId=${repoId} \
-                        -Durl=${repoUrl}
+                        mvn deploy -DskipTests \
+                        -s settings.xml
                     """
                 }
             }
