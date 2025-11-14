@@ -57,10 +57,11 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'nexus-credentials', passwordVariable: 'NEXUS_PASSWORD', usernameVariable: 'NEXUS_USERNAME')]) {
                     script {
-                        def pom = readMavenPom file: 'pom.xml'
+                        def pomContent = readFile 'pom.xml'
+                        def pomVersion = (pomContent =~ '<version>(.+)</version>')[0][1]
                         docker.build(
                             "${DOCKER_IMAGE}:${VERSION}",
-                            "--build-arg VERSION=${pom.version} " +
+                            "--build-arg VERSION=${pomVersion} " +
                             "--build-arg NEXUS_USERNAME=${NEXUS_USERNAME} " +
                             "--build-arg NEXUS_PASSWORD=${NEXUS_PASSWORD} ."
                         )
