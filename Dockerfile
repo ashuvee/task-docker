@@ -11,6 +11,8 @@ ARG GROUP_ID=com.example
 ARG ARTIFACT_ID=sample-webapp
 ARG VERSION=1.0-SNAPSHOT
 
+
+SHELL ["/bin/bash", "-c"]
 # Remove default webapps
 RUN rm -rf /usr/local/tomcat/webapps/*
 
