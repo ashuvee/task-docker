@@ -59,13 +59,16 @@ pipeline {
                     script {
                         def pomContent = readFile 'pom.xml'
                         def pomVersion = (pomContent =~ '<version>(.+)</version>')[0][1]
-                        docker.build(
-                            "${DOCKER_IMAGE}:${VERSION}",
-                            "--network cicd-network " +
-                            "--build-arg VERSION=${pomVersion} " +
-                            "--build-arg NEXUS_USERNAME=${NEXUS_USERNAME} " +
-                            "--build-arg NEXUS_PASSWORD=${NEXUS_PASSWORD} ."
-                        )
+                        
+                        // Download WAR from Nexus
+                        sh """
+                            curl -u ${NEXUS_USERNAME}:${NEXUS_PASSWORD} \
+                            -L -o sample-webapp.war \
+                            "${NEXUS_URL}/service/rest/v1/search/assets/download?repository=maven-snapshots&group=com.example&name=sample-webapp&version=${pomVersion}&maven.extension=war"
+                        """
+                        
+                        // Build Docker image
+                        docker.build("${DOCKER_IMAGE}:${VERSION}")
                     }
                 }
             }
