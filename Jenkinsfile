@@ -60,11 +60,25 @@ pipeline {
                         def pomContent = readFile 'pom.xml'
                         def pomVersion = (pomContent =~ '<version>(.+)</version>')[0][1]
                         
-                        // Download WAR from Nexus using direct repository path
+                        // Get the latest snapshot version from maven-metadata.xml
+                        sh """
+                            curl -u ${NEXUS_USERNAME}:${NEXUS_PASSWORD} \
+                            -s -o maven-metadata.xml \
+                            "${NEXUS_URL}/repository/maven-snapshots/com/example/sample-webapp/${pomVersion}/maven-metadata.xml"
+                        """
+                        
+                        def metadata = readFile('maven-metadata.xml')
+                        def timestamp = (metadata =~ /<timestamp>(.+)<\/timestamp>/)[0][1]
+                        def buildNumber = (metadata =~ /<buildNumber>(.+)<\/buildNumber>/)[0][1]
+                        def snapshotVersion = pomVersion.replace('-SNAPSHOT', "-${timestamp}-${buildNumber}")
+                        
+                        echo "Downloading snapshot version: ${snapshotVersion}"
+                        
+                        // Download WAR from Nexus using snapshot version
                         sh """
                             curl -u ${NEXUS_USERNAME}:${NEXUS_PASSWORD} \
                             -L -o sample-webapp.war \
-                            "${NEXUS_URL}/repository/maven-snapshots/com/example/sample-webapp/${pomVersion}/sample-webapp-${pomVersion}.war"
+                            "${NEXUS_URL}/repository/maven-snapshots/com/example/sample-webapp/${pomVersion}/sample-webapp-${snapshotVersion}.war"
                         """
                         
                         // Build Docker image
