@@ -60,11 +60,11 @@ pipeline {
                         def pomContent = readFile 'pom.xml'
                         def pomVersion = (pomContent =~ '<version>(.+)</version>')[0][1]
                         
-                        // Download WAR from Nexus
+                        // Download WAR from Nexus using direct repository path
                         sh """
                             curl -u ${NEXUS_USERNAME}:${NEXUS_PASSWORD} \
                             -L -o sample-webapp.war \
-                            "${NEXUS_URL}/service/rest/v1/search/assets/download?repository=maven-snapshots&group=com.example&name=sample-webapp&version=${pomVersion}&maven.extension=war"
+                            "${NEXUS_URL}/repository/maven-snapshots/com/example/sample-webapp/${pomVersion}/sample-webapp-${pomVersion}.war"
                         """
                         
                         // Build Docker image
