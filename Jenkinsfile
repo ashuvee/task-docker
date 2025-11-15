@@ -61,6 +61,7 @@ pipeline {
                         def pomVersion = (pomContent =~ '<version>(.+)</version>')[0][1]
                         docker.build(
                             "${DOCKER_IMAGE}:${VERSION}",
+                            "--network cicd-network " +
                             "--build-arg VERSION=${pomVersion} " +
                             "--build-arg NEXUS_USERNAME=${NEXUS_USERNAME} " +
                             "--build-arg NEXUS_PASSWORD=${NEXUS_PASSWORD} ."
